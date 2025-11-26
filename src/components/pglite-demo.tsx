@@ -9,7 +9,7 @@ interface Todo {
 }
 
 export function PGliteDemo() {
-    const { db, isReady } = usePGlite()
+    const { db, isReady, error } = usePGlite()
     const [todos, setTodos] = useState<Todo[]>([])
     const [newTask, setNewTask] = useState('')
     const [loading, setLoading] = useState(true)
@@ -91,6 +91,14 @@ export function PGliteDemo() {
         } catch (error) {
             console.error('Error deleting todo:', error)
         }
+    }
+
+    if (error) {
+        return (
+            <div className="w-full max-w-md rounded-lg border border-destructive bg-card p-6 text-card-foreground shadow-sm">
+                <p className="text-center text-destructive">Error initializing PGlite: {error.message}</p>
+            </div>
+        )
     }
 
     if (!isReady || loading) {
