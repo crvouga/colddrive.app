@@ -156,6 +156,50 @@ CREATE TABLE public.key_value_store (
     CONSTRAINT key_value_store_pkey PRIMARY KEY (key)
 );
 
+CREATE TABLE public.trash (
+    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    item_type character varying(20) NOT NULL,
+    item_id uuid NOT NULL,
+    drive_id uuid NOT NULL,
+    original_name character varying(255) NOT NULL,
+    original_path text,
+    deleted_by uuid NOT NULL,
+    deleted_at timestamp with time zone DEFAULT now() NOT NULL,
+    expires_at timestamp with time zone,
+    CONSTRAINT trash_pkey PRIMARY KEY (id),
+    CONSTRAINT trash_item_type_check CHECK (((item_type)::text = ANY ((ARRAY['file'::character varying, 'folder'::character varying])::text[]))),
+    CONSTRAINT trash_item_unique UNIQUE (item_type, item_id),
+    CONSTRAINT trash_drive_id_fkey FOREIGN KEY (drive_id) REFERENCES public.drives(id) ON DELETE CASCADE,
+    CONSTRAINT trash_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES public.users(id) ON DELETE RESTRICT
+);
+
+CREATE TABLE public.file_metadata (
+    file_id uuid NOT NULL,
+    starred boolean DEFAULT false,
+    description text,
+    color character varying(50),
+    tags text[],
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT file_metadata_pkey PRIMARY KEY (file_id),
+    CONSTRAINT file_metadata_file_id_fkey FOREIGN KEY (file_id) REFERENCES public.files(id) ON DELETE CASCADE
+);
+
+CREATE TABLE public.activity_log (
+    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    user_id uuid NOT NULL,
+    action character varying(50) NOT NULL,
+    item_type character varying(20) NOT NULL,
+    item_id uuid NOT NULL,
+    drive_id uuid,
+    metadata jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT activity_log_pkey PRIMARY KEY (id),
+    CONSTRAINT activity_log_item_type_check CHECK (((item_type)::text = ANY ((ARRAY['file'::character varying, 'folder'::character varying, 'drive'::character varying])::text[]))),
+    CONSTRAINT activity_log_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE,
+    CONSTRAINT activity_log_drive_id_fkey FOREIGN KEY (drive_id) REFERENCES public.drives(id) ON DELETE CASCADE
+);
+
 CREATE TABLE public.schema_migrations (
     version character varying(128) NOT NULL,
     CONSTRAINT schema_migrations_pkey PRIMARY KEY (version)
@@ -186,6 +230,17 @@ CREATE INDEX user_sessions_session_token_idx ON public.user_sessions USING btree
 CREATE INDEX user_sessions_expires_at_idx ON public.user_sessions USING btree (expires_at);
 CREATE INDEX key_value_store_namespace_idx ON public.key_value_store USING btree (namespace);
 CREATE INDEX key_value_store_expires_at_idx ON public.key_value_store USING btree (expires_at);
+CREATE INDEX trash_drive_id_idx ON public.trash USING btree (drive_id);
+CREATE INDEX trash_deleted_by_idx ON public.trash USING btree (deleted_by);
+CREATE INDEX trash_deleted_at_idx ON public.trash USING btree (deleted_at);
+CREATE INDEX trash_expires_at_idx ON public.trash USING btree (expires_at);
+CREATE INDEX trash_item_type_item_id_idx ON public.trash USING btree (item_type, item_id);
+CREATE INDEX file_metadata_starred_idx ON public.file_metadata USING btree (starred) WHERE (starred = true);
+CREATE INDEX activity_log_user_id_idx ON public.activity_log USING btree (user_id);
+CREATE INDEX activity_log_item_type_item_id_idx ON public.activity_log USING btree (item_type, item_id);
+CREATE INDEX activity_log_drive_id_idx ON public.activity_log USING btree (drive_id);
+CREATE INDEX activity_log_created_at_idx ON public.activity_log USING btree (created_at);
+CREATE INDEX activity_log_action_idx ON public.activity_log USING btree (action);
 
 -- Triggers
 DROP TRIGGER IF EXISTS drives_updated_at_trigger ON public.drives;
@@ -211,6 +266,9 @@ CREATE TRIGGER user_sessions_updated_at_trigger BEFORE UPDATE ON public.user_ses
 
 DROP TRIGGER IF EXISTS key_value_store_updated_at_trigger ON public.key_value_store;
 CREATE TRIGGER key_value_store_updated_at_trigger BEFORE UPDATE ON public.key_value_store FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS file_metadata_updated_at_trigger ON public.file_metadata;
+CREATE TRIGGER file_metadata_updated_at_trigger BEFORE UPDATE ON public.file_metadata FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 `.trim();
 
 export async function hashSchema(schema: string): Promise<string> {

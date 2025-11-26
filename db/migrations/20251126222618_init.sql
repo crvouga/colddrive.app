@@ -180,6 +180,57 @@ CREATE TABLE key_value_store (
 CREATE INDEX key_value_store_namespace_idx ON key_value_store(namespace);
 CREATE INDEX key_value_store_expires_at_idx ON key_value_store(expires_at);
 
+-- 9. Trash table (for tracking deleted files and folders - Google Drive-like trash bin)
+CREATE TABLE trash (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    item_type VARCHAR(20) NOT NULL CHECK (item_type IN ('file', 'folder')),
+    item_id UUID NOT NULL,
+    drive_id UUID NOT NULL REFERENCES drives(id) ON DELETE CASCADE,
+    original_name VARCHAR(255) NOT NULL,
+    original_path TEXT,
+    deleted_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    deleted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ,
+    CONSTRAINT trash_item_unique UNIQUE (item_type, item_id)
+);
+
+CREATE INDEX trash_drive_id_idx ON trash(drive_id);
+CREATE INDEX trash_deleted_by_idx ON trash(deleted_by);
+CREATE INDEX trash_deleted_at_idx ON trash(deleted_at);
+CREATE INDEX trash_expires_at_idx ON trash(expires_at);
+CREATE INDEX trash_item_type_item_id_idx ON trash(item_type, item_id);
+
+-- 10. File metadata table (for extended file attributes like starred, description, tags)
+CREATE TABLE file_metadata (
+    file_id UUID PRIMARY KEY REFERENCES files(id) ON DELETE CASCADE,
+    starred BOOLEAN DEFAULT FALSE,
+    description TEXT,
+    color VARCHAR(50),
+    tags TEXT[],
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX file_metadata_starred_idx ON file_metadata(starred) WHERE starred = TRUE;
+
+-- 11. Activity log table (for tracking file operations - view, edit, share, etc.)
+CREATE TABLE activity_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    action VARCHAR(50) NOT NULL,
+    item_type VARCHAR(20) NOT NULL CHECK (item_type IN ('file', 'folder', 'drive')),
+    item_id UUID NOT NULL,
+    drive_id UUID REFERENCES drives(id) ON DELETE CASCADE,
+    metadata JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX activity_log_user_id_idx ON activity_log(user_id);
+CREATE INDEX activity_log_item_type_item_id_idx ON activity_log(item_type, item_id);
+CREATE INDEX activity_log_drive_id_idx ON activity_log(drive_id);
+CREATE INDEX activity_log_created_at_idx ON activity_log(created_at);
+CREATE INDEX activity_log_action_idx ON activity_log(action);
+
 -- Add updated_at triggers to all tables
 CREATE TRIGGER users_updated_at_trigger
     BEFORE UPDATE ON users
@@ -211,9 +262,15 @@ CREATE TRIGGER key_value_store_updated_at_trigger
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER file_metadata_updated_at_trigger
+    BEFORE UPDATE ON file_metadata
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
 -- migrate:down
 
 -- Drop triggers first
+DROP TRIGGER IF EXISTS file_metadata_updated_at_trigger ON file_metadata;
 DROP TRIGGER IF EXISTS key_value_store_updated_at_trigger ON key_value_store;
 DROP TRIGGER IF EXISTS user_sessions_updated_at_trigger ON user_sessions;
 DROP TRIGGER IF EXISTS files_updated_at_trigger ON files;
@@ -227,6 +284,9 @@ DROP TRIGGER IF EXISTS folders_check_parent_drive_trigger ON folders;
 ALTER TABLE IF EXISTS files DROP CONSTRAINT IF EXISTS files_current_version_id_fkey;
 
 -- Drop tables in reverse order of dependencies
+DROP TABLE IF EXISTS activity_log;
+DROP TABLE IF EXISTS file_metadata;
+DROP TABLE IF EXISTS trash;
 DROP TABLE IF EXISTS key_value_store;
 DROP TABLE IF EXISTS user_sessions;
 DROP TABLE IF EXISTS drive_shares;
