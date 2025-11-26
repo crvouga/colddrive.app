@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "src/api/**/*.ts": {
+      "runtime": "edge"
+    }
+  }
+}
+
