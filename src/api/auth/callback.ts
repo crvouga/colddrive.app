@@ -78,9 +78,14 @@ export async function handler(req: Request): Promise<Response> {
     const cookie = createSessionCookie(jwtToken);
 
     // Redirect to app with cookie set
-    const response = Response.redirect(new URL('/', origin));
-    response.headers.set('Set-Cookie', cookie);
-    return response;
+    // Can't modify Response.redirect() headers (immutable), so create new Response
+    return new Response(null, {
+      status: 302,
+      headers: {
+        'Location': new URL('/', origin).toString(),
+        'Set-Cookie': cookie,
+      },
+    });
   } catch (error) {
     console.error('Error in OAuth callback:', error);
     return Response.redirect(new URL('/?error=auth_failed', origin));

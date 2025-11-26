@@ -38,6 +38,7 @@
     "google-auth-library": "^10.5.0",
     "jose": "^6.1.2",
     "lucide-react": "^0.555.0",
+    "postgres": "^3.4.7",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "superjson": "^2.2.5",

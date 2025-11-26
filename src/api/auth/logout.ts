@@ -23,10 +23,15 @@ export async function handler(req: Request): Promise<Response> {
   const deleteCookie = createSessionDeleteCookie();
   
   // Return success response with delete cookie header
+  // Can't modify Response.redirect() headers (immutable), so create new Response
   const url = new URL(req.url);
-  const response = Response.redirect(new URL('/', url.origin));
-  response.headers.set('Set-Cookie', deleteCookie);
-  return response;
+  return new Response(null, {
+    status: 302,
+    headers: {
+      'Location': new URL('/', url.origin).toString(),
+      'Set-Cookie': deleteCookie,
+    },
+  });
 }
 
 export default handler;

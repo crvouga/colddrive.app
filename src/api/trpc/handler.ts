@@ -3,7 +3,7 @@ import { appRouter } from '../../server/index';
 import type { Context } from '../../server/trpc';
 import { getSessionTokenFromCookies, verifySessionToken } from '../../auth/server/session';
 import { findSessionByToken } from '../../auth/server/db';
-import { sql } from '@vercel/postgres';
+import { sql } from '../../auth/server/db-connection';
 
 export const config = {
   runtime: 'edge',

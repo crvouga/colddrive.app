@@ -1,4 +1,4 @@
-import { sql } from '@vercel/postgres';
+import { sql } from './db-connection';
 
 export interface User {
   id: string;
