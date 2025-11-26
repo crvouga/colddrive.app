@@ -22,11 +22,9 @@ export function PGliteProvider({ children }: { children: ReactNode }) {
 
         const initDb = async () => {
             try {
-                // Initialize PGlite with indexeddb persistence
-                // Using the dataDir option instead of the URL format
-                pglite = new PGlite({
-                    dataDir: 'idb://colddrive-db',
-                })
+                // Initialize PGlite in memory mode (no persistence)
+                // Change to 'idb://colddrive-db' for IndexedDB persistence once working
+                pglite = new PGlite()
 
                 // Wait for the database to be ready
                 await pglite.waitReady
@@ -34,7 +32,7 @@ export function PGliteProvider({ children }: { children: ReactNode }) {
                 if (mounted) {
                     setDb(pglite)
                     setIsReady(true)
-                    console.log('PGlite initialized successfully')
+                    console.log('PGlite initialized successfully (in-memory mode)')
                 }
             } catch (error) {
                 console.error('Failed to initialize PGlite:', error)

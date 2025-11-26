@@ -6,11 +6,7 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react({
-      babel: {
-        plugins: [['babel-plugin-react-compiler']],
-      },
-    }),
+    react(),
     tailwindcss(),
   ],
   resolve: {
@@ -23,11 +19,5 @@ export default defineConfig({
   },
   worker: {
     format: 'es',
-  },
-  server: {
-    headers: {
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-      'Cross-Origin-Opener-Policy': 'same-origin',
-    },
   },
 })
