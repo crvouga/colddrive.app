@@ -16,31 +16,10 @@ export function PGliteDemo() {
 
     useEffect(() => {
         if (isReady && db) {
-            initializeTable()
-        }
-    }, [isReady, db])
-
-    const initializeTable = async () => {
-        if (!db) return
-
-        try {
-            // Create table if it doesn't exist
-            await db.exec(`
-        CREATE TABLE IF NOT EXISTS todos (
-          id SERIAL PRIMARY KEY,
-          task TEXT NOT NULL,
-          completed BOOLEAN DEFAULT FALSE
-        );
-      `)
-
-            // Load existing todos
-            await loadTodos()
-        } catch (error) {
-            console.error('Error initializing table:', error)
-        } finally {
+            loadTodos()
             setLoading(false)
         }
-    }
+    }, [isReady, db])
 
     const loadTodos = async () => {
         if (!db) return
