@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { usePGlite } from '@/lib/pglite'
 import { Button } from '@/components/ui/button'
 
@@ -9,31 +9,25 @@ interface Todo {
 }
 
 export function PGliteDemo() {
-    const { db, isReady, error } = usePGlite()
+    const db = usePGlite()
     const [todos, setTodos] = useState<Todo[]>([])
     const [newTask, setNewTask] = useState('')
-    const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        if (isReady && db) {
-            loadTodos()
-            setLoading(false)
-        }
-    }, [isReady, db])
-
-    const loadTodos = async () => {
-        if (!db) return
-
+    const loadTodos = useCallback(async () => {
         try {
             const result = await db.query<Todo>('SELECT * FROM todos ORDER BY id DESC')
             setTodos(result.rows)
         } catch (error) {
             console.error('Error loading todos:', error)
         }
-    }
+    }, [db])
+
+    useEffect(() => {
+        loadTodos()
+    }, [loadTodos])
 
     const addTodo = async () => {
-        if (!db || !newTask.trim()) return
+        if (!newTask.trim()) return
 
         try {
             await db.query(
@@ -48,8 +42,6 @@ export function PGliteDemo() {
     }
 
     const toggleTodo = async (id: number) => {
-        if (!db) return
-
         try {
             await db.query(
                 'UPDATE todos SET completed = NOT completed WHERE id = $1',
@@ -62,30 +54,12 @@ export function PGliteDemo() {
     }
 
     const deleteTodo = async (id: number) => {
-        if (!db) return
-
         try {
             await db.query('DELETE FROM todos WHERE id = $1', [id])
             await loadTodos()
         } catch (error) {
             console.error('Error deleting todo:', error)
         }
-    }
-
-    if (error) {
-        return (
-            <div className="w-full max-w-md rounded-lg border border-destructive bg-card p-6 text-card-foreground shadow-sm">
-                <p className="text-center text-destructive">Error initializing PGlite: {error.message}</p>
-            </div>
-        )
-    }
-
-    if (!isReady || loading) {
-        return (
-            <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 text-card-foreground shadow-sm">
-                <p className="text-center text-muted-foreground">Loading PGlite...</p>
-            </div>
-        )
     }
 
     return (

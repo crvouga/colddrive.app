@@ -2,18 +2,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { trpc } from './trpc-client'
-
-interface PGliteContextType {
-    db: PGlite | null
-    isReady: boolean
-    error: Error | null
-}
-
-const PGliteContext = createContext<PGliteContextType>({
-    db: null,
-    isReady: false,
-    error: null,
-})
+import { Spinner } from '@/components/ui/spinner'
 
 const SCHEMA_HASH_KEY = 'pglite-schema-hash'
 
@@ -62,11 +51,17 @@ async function applySchema(db: PGlite, schema: string): Promise<void> {
     }
 }
 
-export function PGliteProvider({ children }: { children: ReactNode }) {
+// Context for PGlite DB instance
+interface PGliteInitContextType {
+    db: PGlite
+}
+
+const PGliteInitContext = createContext<PGliteInitContextType | null>(null)
+
+// Provider for initializing PGlite database
+export function PGliteInitProvider({ children }: { children: ReactNode }) {
     const [db, setDb] = useState<PGlite | null>(globalDb)
-    const [isReady, setIsReady] = useState(!!globalDb)
     const [error, setError] = useState<Error | null>(null)
-    const { data: schemaData, isLoading: schemaLoading } = trpc.clientSideSchema.get.useQuery()
 
     useEffect(() => {
         let mounted = true
@@ -85,14 +80,61 @@ export function PGliteProvider({ children }: { children: ReactNode }) {
             }
         }
 
-        // Always call getOrCreateDb to ensure DB is ready
-        // It will return existing globalDb if available
         initDb()
+
+        return () => {
+            mounted = false
+        }
     }, [])
 
-    // Handle schema versioning when schema data is available
+    // Show loading spinner until DB is ready
+    if (!db) {
+        return (
+            <div className="flex min-h-svh items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <Spinner size={32} />
+                    <p className="text-sm text-muted-foreground">Initializing database...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // Show error state if initialization failed
+    if (error) {
+        return (
+            <div className="flex min-h-svh items-center justify-center">
+                <div className="flex flex-col items-center gap-4 rounded-lg border border-destructive bg-card p-6">
+                    <p className="text-center text-destructive">Error initializing PGlite: {error.message}</p>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <PGliteInitContext.Provider value={{ db }}>
+            {children}
+        </PGliteInitContext.Provider>
+    )
+}
+
+// Hook to get PGlite DB instance (only works within PGliteInitProvider)
+function usePGliteInit(): PGlite {
+    const context = useContext(PGliteInitContext)
+    if (context === null) {
+        throw new Error('usePGliteInit must be used within a PGliteInitProvider')
+    }
+    return context.db
+}
+
+// Provider for schema initialization
+export function PGliteSchemaProvider({ children }: { children: ReactNode }) {
+    const db = usePGliteInit()
+    const [isReady, setIsReady] = useState(false)
+    const [error, setError] = useState<Error | null>(null)
+    const { data: schemaData, isLoading: schemaLoading } = trpc.clientSideSchema.get.useQuery()
+
     useEffect(() => {
-        if (!schemaData || !db || schemaLoading) return
+        if (!schemaData || schemaLoading) return
 
         let mounted = true
 
@@ -126,21 +168,45 @@ export function PGliteProvider({ children }: { children: ReactNode }) {
         return () => {
             mounted = false
         }
-    }, [schemaData, db, schemaLoading])
+    }, [schemaData, schemaLoading, db])
 
-    return (
-        <PGliteContext.Provider value={{ db, isReady, error }}>
-            {children}
-        </PGliteContext.Provider>
-    )
+    // Show loading spinner while fetching or applying schema
+    if (schemaLoading || !isReady) {
+        return (
+            <div className="flex min-h-svh items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <Spinner size={32} />
+                    <p className="text-sm text-muted-foreground">Loading schema...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // Show error state if schema application failed
+    if (error) {
+        return (
+            <div className="flex min-h-svh items-center justify-center">
+                <div className="flex flex-col items-center gap-4 rounded-lg border border-destructive bg-card p-6">
+                    <p className="text-center text-destructive">Error applying schema: {error.message}</p>
+                </div>
+            </div>
+        )
+    }
+
+    return <>{children}</>
 }
 
-export function usePGlite() {
-    const context = useContext(PGliteContext)
-    if (context === undefined) {
-        throw new Error('usePGlite must be used within a PGliteProvider')
+// Main hook for consumers - throws if not ready, returns only db
+export function usePGlite(): PGlite {
+    const db = usePGliteInit()
+
+    // At this point, if we have db from PGliteInitProvider and we're past PGliteSchemaProvider,
+    // everything should be ready. But we'll throw if db is somehow null as a safety check.
+    if (!db) {
+        throw new Error('PGlite database is not ready. Ensure you are using usePGlite within both PGliteInitProvider and PGliteSchemaProvider.')
     }
-    return context
+
+    return db
 }
 
 // Accept HMR updates without reloading
@@ -149,4 +215,3 @@ if (import.meta.hot) {
         console.log('PGlite module updated')
     })
 }
-

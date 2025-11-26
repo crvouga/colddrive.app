@@ -1,6 +1,6 @@
 import { ModeToggle } from "@/components/mode-toggle"
 import { ThemeProvider } from "@/components/theme-provider"
-import { PGliteProvider } from "@/lib/pglite"
+import { PGliteInitProvider, PGliteSchemaProvider } from "@/lib/pglite"
 import { PGliteDemo } from "@/components/pglite-demo"
 import { TrpcDemo } from "@/components/trpc-demo"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
@@ -23,15 +23,17 @@ function App() {
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-          <PGliteProvider>
-            <div className="flex min-h-svh flex-col items-center justify-center gap-4 bg-background p-4 text-foreground">
-              <div className="absolute right-4 top-4">
-                <ModeToggle />
+          <PGliteInitProvider>
+            <PGliteSchemaProvider>
+              <div className="flex min-h-svh flex-col items-center justify-center gap-4 bg-background p-4 text-foreground">
+                <div className="absolute right-4 top-4">
+                  <ModeToggle />
+                </div>
+                <TrpcDemo />
+                <PGliteDemo />
               </div>
-              <TrpcDemo />
-              <PGliteDemo />
-            </div>
-          </PGliteProvider>
+            </PGliteSchemaProvider>
+          </PGliteInitProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </trpc.Provider>
