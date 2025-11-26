@@ -66,7 +66,7 @@ export function PGliteProvider({ children }: { children: ReactNode }) {
     const [db, setDb] = useState<PGlite | null>(globalDb)
     const [isReady, setIsReady] = useState(!!globalDb)
     const [error, setError] = useState<Error | null>(null)
-    const { data: schemaData, isLoading: schemaLoading } = trpc.schema.getSchema.useQuery()
+    const { data: schemaData, isLoading: schemaLoading } = trpc.clientSideSchema.get.useQuery()
 
     useEffect(() => {
         let mounted = true
