@@ -2,6 +2,47 @@
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
+## Google OAuth Authentication
+
+This application uses Google OAuth for authentication. Users must be logged in to access the app.
+
+### Required Environment Variables
+
+Add the following environment variables to your `.env` file or deployment environment:
+
+```bash
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# Optional: Customize redirect URI (defaults to /api/auth/callback)
+GOOGLE_REDIRECT_URI=/api/auth/callback
+
+# Optional: Base URL for OAuth redirects (auto-detected in production)
+BASE_URL=http://localhost:5173
+
+# Session Configuration
+SESSION_SECRET=your-random-session-secret-here
+
+# Database Connection
+POSTGRES_URL=postgres://user:password@host:port/database
+```
+
+### Setting up Google OAuth
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the Google+ API
+4. Go to "Credentials" and create an OAuth 2.0 Client ID
+5. Add authorized redirect URIs:
+   - `http://localhost:5173/api/auth/callback` (for local development)
+   - `https://your-domain.com/api/auth/callback` (for production)
+6. Copy the Client ID and Client Secret to your environment variables
+
+### Graceful Degradation
+
+If Google OAuth is not configured, the application will show a message indicating that authentication is not yet set up, preventing the app from crashing.
+
 ## Database Migrations
 
 This project uses [dbmate](https://github.com/amacneil/dbmate) for managing PostgreSQL database migrations.

@@ -1,9 +1,18 @@
 import type { Plugin } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'http';
+import { config as loadDotenv } from 'dotenv';
+import { resolve } from 'path';
+
+// Load .env file at plugin initialization
+loadDotenv({ path: resolve(process.cwd(), '.env') });
 
 export function vercelApiPlugin(): Plugin {
   return {
     name: 'vercel-api',
+    configResolved() {
+      // Ensure .env is loaded (in case config changed)
+      loadDotenv({ path: resolve(process.cwd(), '.env') });
+    },
     configureServer(server) {
       server.middlewares.use(async (req: IncomingMessage, res: ServerResponse, next) => {
         // Only handle /api routes
@@ -12,8 +21,20 @@ export function vercelApiPlugin(): Plugin {
         }
 
         try {
-          // Dynamically import the handler
-          const { handler } = await import('./src/api/trpc/handler.js');
+          let handler;
+          
+          // Handle auth routes
+          if (req.url.startsWith('/api/auth/callback')) {
+            const authModule = await import('./src/api/auth/callback.js');
+            handler = authModule.handler;
+          } else if (req.url.startsWith('/api/auth/logout')) {
+            const logoutModule = await import('./src/api/auth/logout.js');
+            handler = logoutModule.handler;
+          } else {
+            // Handle tRPC routes
+            const trpcModule = await import('./src/api/trpc/handler.js');
+            handler = trpcModule.handler;
+          }
 
           // Create a Request object from the incoming request
           const protocol = req.headers['x-forwarded-proto'] || 'http';

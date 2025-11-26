@@ -1,0 +1,33 @@
+import { getSessionTokenFromCookies, verifySessionToken, createSessionDeleteCookie } from '../../auth/server/session';
+import { deleteSession } from '../../auth/server/db';
+
+export const config = {
+  runtime: 'edge',
+};
+
+export async function handler(req: Request): Promise<Response> {
+  // Extract session token from cookies
+  const cookieHeader = req.headers.get('cookie');
+  const sessionToken = getSessionTokenFromCookies(cookieHeader);
+  
+  if (sessionToken) {
+    // Verify token to get session ID
+    const payload = await verifySessionToken(sessionToken);
+    if (payload) {
+      // Delete session from database
+      await deleteSession(payload.sessionId);
+    }
+  }
+
+  // Create delete cookie
+  const deleteCookie = createSessionDeleteCookie();
+  
+  // Return success response with delete cookie header
+  const url = new URL(req.url);
+  const response = Response.redirect(new URL('/', url.origin));
+  response.headers.set('Set-Cookie', deleteCookie);
+  return response;
+}
+
+export default handler;
+

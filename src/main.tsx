@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { httpBatchLink } from "@trpc/client"
 import superjson from "superjson"
 import { trpc } from "@/lib/trpc-client"
+import { AuthProvider } from "@/auth/client/context"
 
 const queryClient = new QueryClient()
 const trpcClient = trpc.createClient({
@@ -24,11 +25,13 @@ createRoot(document.getElementById('root')!).render(
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-          <PGliteInitProvider>
-            <PGliteSchemaProvider>
-              <App />
-            </PGliteSchemaProvider>
-          </PGliteInitProvider>
+          <AuthProvider>
+            <PGliteInitProvider>
+              <PGliteSchemaProvider>
+                <App />
+              </PGliteSchemaProvider>
+            </PGliteInitProvider>
+          </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </trpc.Provider>

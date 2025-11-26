@@ -1,6 +1,7 @@
 import { router, publicProcedure } from './trpc';
 import { z } from 'zod';
 import { clientSideSchemaRouter } from './client-side-schema';
+import { authRouter } from '../auth/server/router';
 
 export const appRouter = router({
   greeting: router({
@@ -21,6 +22,7 @@ export const appRouter = router({
     }),
   }),
   clientSideSchema: clientSideSchemaRouter,
+  auth: authRouter,
 });
 
 export type AppRouter = typeof appRouter;
