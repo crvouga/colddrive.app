@@ -8,7 +8,18 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "tc": "tsc --noEmit --watch"
+    "tc": "tsc --noEmit --watch",
+    "db:new": "dbmate new",
+    "db:up": "dbmate up",
+    "db:down": "dbmate down",
+    "db:reset": "dbmate reset",
+    "db:status": "dbmate status",
+    "db:create": "dbmate create",
+    "docker:stop": "docker stop $(docker ps -aq)",
+    "docker": "bun docker:down && bun docker:up",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f postgres"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.14",
