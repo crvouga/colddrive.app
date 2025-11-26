@@ -131,6 +131,31 @@ CREATE TABLE public.drive_shares (
     CONSTRAINT drive_shares_shared_with_user_id_fkey FOREIGN KEY (shared_with_user_id) REFERENCES public.users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE public.user_sessions (
+    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    user_id uuid NOT NULL,
+    session_token character varying(255) NOT NULL,
+    refresh_token character varying(255),
+    expires_at timestamp with time zone NOT NULL,
+    ip_address character varying(45),
+    user_agent text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT user_sessions_pkey PRIMARY KEY (id),
+    CONSTRAINT user_sessions_session_token_key UNIQUE (session_token),
+    CONSTRAINT user_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE public.key_value_store (
+    key character varying(255) NOT NULL,
+    value text NOT NULL,
+    namespace character varying(100) DEFAULT 'default'::character varying,
+    expires_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT key_value_store_pkey PRIMARY KEY (key)
+);
+
 CREATE TABLE public.schema_migrations (
     version character varying(128) NOT NULL,
     CONSTRAINT schema_migrations_pkey PRIMARY KEY (version)
@@ -156,6 +181,11 @@ CREATE INDEX file_versions_uploaded_by_idx ON public.file_versions USING btree (
 CREATE INDEX drive_shares_drive_id_idx ON public.drive_shares USING btree (drive_id);
 CREATE INDEX drive_shares_shared_by_idx ON public.drive_shares USING btree (shared_by);
 CREATE INDEX drive_shares_shared_with_user_id_idx ON public.drive_shares USING btree (shared_with_user_id);
+CREATE INDEX user_sessions_user_id_idx ON public.user_sessions USING btree (user_id);
+CREATE INDEX user_sessions_session_token_idx ON public.user_sessions USING btree (session_token);
+CREATE INDEX user_sessions_expires_at_idx ON public.user_sessions USING btree (expires_at);
+CREATE INDEX key_value_store_namespace_idx ON public.key_value_store USING btree (namespace);
+CREATE INDEX key_value_store_expires_at_idx ON public.key_value_store USING btree (expires_at);
 
 -- Triggers
 DROP TRIGGER IF EXISTS drives_updated_at_trigger ON public.drives;
@@ -175,6 +205,12 @@ CREATE TRIGGER folders_updated_at_trigger BEFORE UPDATE ON public.folders FOR EA
 
 DROP TRIGGER IF EXISTS users_updated_at_trigger ON public.users;
 CREATE TRIGGER users_updated_at_trigger BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS user_sessions_updated_at_trigger ON public.user_sessions;
+CREATE TRIGGER user_sessions_updated_at_trigger BEFORE UPDATE ON public.user_sessions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS key_value_store_updated_at_trigger ON public.key_value_store;
+CREATE TRIGGER key_value_store_updated_at_trigger BEFORE UPDATE ON public.key_value_store FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 `.trim();
 
 export async function hashSchema(schema: string): Promise<string> {

@@ -150,6 +150,36 @@ CREATE INDEX drive_shares_drive_id_idx ON drive_shares(drive_id);
 CREATE INDEX drive_shares_shared_with_user_id_idx ON drive_shares(shared_with_user_id);
 CREATE INDEX drive_shares_shared_by_idx ON drive_shares(shared_by);
 
+-- 7. User sessions table (for tracking logged in user sessions)
+CREATE TABLE user_sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    session_token VARCHAR(255) UNIQUE NOT NULL,
+    refresh_token VARCHAR(255),
+    expires_at TIMESTAMPTZ NOT NULL,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX user_sessions_user_id_idx ON user_sessions(user_id);
+CREATE INDEX user_sessions_session_token_idx ON user_sessions(session_token);
+CREATE INDEX user_sessions_expires_at_idx ON user_sessions(expires_at);
+
+-- 8. Key-value store table (for generic key-value storage)
+CREATE TABLE key_value_store (
+    key VARCHAR(255) PRIMARY KEY,
+    value TEXT NOT NULL,
+    namespace VARCHAR(100) DEFAULT 'default',
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX key_value_store_namespace_idx ON key_value_store(namespace);
+CREATE INDEX key_value_store_expires_at_idx ON key_value_store(expires_at);
+
 -- Add updated_at triggers to all tables
 CREATE TRIGGER users_updated_at_trigger
     BEFORE UPDATE ON users
@@ -171,9 +201,21 @@ CREATE TRIGGER files_updated_at_trigger
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER user_sessions_updated_at_trigger
+    BEFORE UPDATE ON user_sessions
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER key_value_store_updated_at_trigger
+    BEFORE UPDATE ON key_value_store
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
 -- migrate:down
 
 -- Drop triggers first
+DROP TRIGGER IF EXISTS key_value_store_updated_at_trigger ON key_value_store;
+DROP TRIGGER IF EXISTS user_sessions_updated_at_trigger ON user_sessions;
 DROP TRIGGER IF EXISTS files_updated_at_trigger ON files;
 DROP TRIGGER IF EXISTS folders_updated_at_trigger ON folders;
 DROP TRIGGER IF EXISTS drives_updated_at_trigger ON drives;
@@ -185,6 +227,8 @@ DROP TRIGGER IF EXISTS folders_check_parent_drive_trigger ON folders;
 ALTER TABLE IF EXISTS files DROP CONSTRAINT IF EXISTS files_current_version_id_fkey;
 
 -- Drop tables in reverse order of dependencies
+DROP TABLE IF EXISTS key_value_store;
+DROP TABLE IF EXISTS user_sessions;
 DROP TABLE IF EXISTS drive_shares;
 DROP TABLE IF EXISTS file_versions;
 DROP TABLE IF EXISTS files;
