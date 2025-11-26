@@ -2,7 +2,8 @@ import { PGlite } from '@electric-sql/pglite'
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { trpc } from './trpc-client'
-import { Spinner } from '@/components/ui/spinner'
+import { LoadingScreen } from '@/components/ui/loading-screen'
+import { ErrorScreen } from '@/components/ui/error-screen'
 
 const SCHEMA_HASH_KEY = 'pglite-schema-hash'
 
@@ -89,24 +90,16 @@ export function PGliteInitProvider({ children }: { children: ReactNode }) {
 
     // Show loading spinner until DB is ready
     if (!db) {
-        return (
-            <div className="flex min-h-svh items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <Spinner size={32} />
-                    <p className="text-sm text-muted-foreground">Initializing database...</p>
-                </div>
-            </div>
-        )
+        return <LoadingScreen message="Initializing database..." />
     }
 
     // Show error state if initialization failed
     if (error) {
         return (
-            <div className="flex min-h-svh items-center justify-center">
-                <div className="flex flex-col items-center gap-4 rounded-lg border border-destructive bg-card p-6">
-                    <p className="text-center text-destructive">Error initializing PGlite: {error.message}</p>
-                </div>
-            </div>
+            <ErrorScreen
+                title="Database Initialization Error"
+                message={`Failed to initialize PGlite: ${error.message}`}
+            />
         )
     }
 
@@ -172,24 +165,16 @@ export function PGliteSchemaProvider({ children }: { children: ReactNode }) {
 
     // Show loading spinner while fetching or applying schema
     if (schemaLoading || !isReady) {
-        return (
-            <div className="flex min-h-svh items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <Spinner size={32} />
-                    <p className="text-sm text-muted-foreground">Loading schema...</p>
-                </div>
-            </div>
-        )
+        return <LoadingScreen message="Loading schema..." />
     }
 
     // Show error state if schema application failed
     if (error) {
         return (
-            <div className="flex min-h-svh items-center justify-center">
-                <div className="flex flex-col items-center gap-4 rounded-lg border border-destructive bg-card p-6">
-                    <p className="text-center text-destructive">Error applying schema: {error.message}</p>
-                </div>
-            </div>
+            <ErrorScreen
+                title="Schema Error"
+                message={`Failed to apply schema: ${error.message}`}
+            />
         )
     }
 
