@@ -1,4 +1,5 @@
 import { PGlite } from '@electric-sql/pglite'
+import { uuid_ossp } from '@electric-sql/pglite/contrib/uuid_ossp'
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { trpc } from './trpc-client'
@@ -22,10 +23,14 @@ async function getOrCreateDb(): Promise<PGlite> {
 
     initPromise = (async () => {
         try {
-            const db = new PGlite("idb://colddrive-db")
+            const db = new PGlite("idb://colddrive-db", {
+                extensions: {
+                    uuid_ossp,
+                },
+            })
             await db.waitReady
             globalDb = db
-            console.log('PGlite initialized successfully (IndexedDB mode)')
+            console.log('PGlite initialized successfully (IndexedDB mode) with extensions')
             return db
         } catch (error) {
             console.error('Failed to initialize PGlite:', error)
