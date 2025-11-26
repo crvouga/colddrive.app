@@ -72,3 +72,4 @@ export function sql(strings: TemplateStringsArray, ...values: any[]) {
     return vercelSql(strings, ...values);
   }
 }
+
