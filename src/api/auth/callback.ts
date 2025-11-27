@@ -1,7 +1,7 @@
 import { exchangeCodeForTokens, verifyGoogleToken, isGoogleAuthConfigured } from '../../auth/server/google';
-import { upsertUser } from '../../auth/server/db';
+import { upsertUser } from '../../server/lib/db';
 import { createSessionToken, createSessionCookie } from '../../auth/server/session';
-import { createSession, generateSessionToken } from '../../auth/server/db';
+import { createSession, generateSessionToken } from '../../server/lib/db';
 
 export const config = {
   runtime: 'edge',

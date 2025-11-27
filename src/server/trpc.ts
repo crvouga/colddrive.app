@@ -1,6 +1,6 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import superjson from 'superjson';
-import type { User } from '../auth/server/db';
+import type { User } from './lib/db';
 
 export type Context = {
   user: User | null;

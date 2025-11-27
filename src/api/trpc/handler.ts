@@ -2,7 +2,7 @@ import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { appRouter } from '../../server/index';
 import type { Context } from '../../server/trpc';
 import { getSessionTokenFromCookies, verifySessionToken } from '../../auth/server/session';
-import { findSessionByToken } from '../../auth/server/db';
+import { findSessionByToken } from '../../server/lib/db';
 import { sql } from '../../server/lib/db-connection';
 
 export const config = {

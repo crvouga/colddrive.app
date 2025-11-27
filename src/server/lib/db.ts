@@ -1,4 +1,4 @@
-import { sql } from '../../server/lib/db-connection';
+import { sql } from './db-connection';
 
 export interface User {
   id: string;

@@ -1,5 +1,5 @@
 import { getSessionTokenFromCookies, verifySessionToken, createSessionDeleteCookie } from '../../auth/server/session';
-import { deleteSession } from '../../auth/server/db';
+import { deleteSession } from '../../server/lib/db';
 
 export const config = {
   runtime: 'edge',

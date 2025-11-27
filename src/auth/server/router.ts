@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
+import { deleteSession } from '../../server/lib/db';
 import { publicProcedure, router } from '../../server/trpc';
-import { deleteSession } from './db';
 import { getGoogleAuthUrl, isGoogleAuthConfigured } from './google';
 import { createSessionDeleteCookie, getSessionTokenFromCookies, verifySessionToken } from './session';
 
